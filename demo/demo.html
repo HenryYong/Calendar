@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" type="text/css" href="css/calendar.css">
+    <style type="text/css">
+    	button{
+    		width: 100px;
+    		height: 30px;
+    		line-height: 30px;
+    		border: 1px solid #ccc;
+    	}
+
+    	.btn-row{
+    		padding: 15px 0;
+    		text-align: center;
+    	}
+    </style>
+</head>
+<body>
+	<div class="btn-row">
+		<button id="testprev">Go Prev</button>
+		<button id="testnext">Go Next</button>
+	</div>
+	<div class="calendar" id="calendar"></div>
+
+<script src="./javascript/calendar.js"></script>
+<script type="text/javascript">
+    var localDate = new Date(),
+        curYear = localDate.getFullYear(),
+        curMonth = localDate.getMonth() + 1;
+
+    var calendar = new Calendar({
+        year: curYear,
+        month: curMonth,
+        datePosition: 'leftTop',
+        leftTopHTML: '',
+        rightTopHTML: '111',
+        leftBottomHTML: '222',
+        rightBottomHTML: '333',
+        notAvailable: {
+            prev: [31],
+            current: [5,8,26],
+            next: [2]
+        },
+        displayInfoOnDisabled: true,
+        weekStart: 6,
+        showLastMonth: 'yes',
+        showNextMonth: 'yes',
+        thisMonthDateStyle: 'this',
+        lastMonthDateStyle: 'last',
+        nextMonthDateStyle: 'next',
+        preRenderCallback: function(){
+            console.log('prerender')
+        },
+        postRenderCallback: function(){
+            console.log('rendered')
+        },
+        hoverCallback: function(){
+            console.log('hover');
+        },
+        outCallback: function(){
+            console.log('out');
+        },
+        clickCallback: function(){
+            console.log('click');
+        }
+    });
+
+    calendar.init();
+    calendar.updateContent({
+        leftTopHTML: '',
+        leftBottomHTML: 'leftBtm',
+        rightTopHTML: 'rightTop',
+        rightBottomHTML: 'rightBtm',
+        notAvailable: {
+            prev: [],
+            current: [1, 8, 19, 22],
+            next: [2]
+        }
+    });
+
+    document.querySelector('#testprev').addEventListener('click', function(){
+        calendar.prev();
+    });
+
+    document.querySelector('#testnext').addEventListener('click', function(){
+        calendar.next();
+    });
+</script>
+</body>
+</html>
