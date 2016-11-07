@@ -41,7 +41,7 @@
 		}
 
 		return days;
-	}
+	};
 
 	//获取某个月的第一天是星期几
 	//To get the day of first day of certain month
@@ -59,7 +59,7 @@
 		}
 
 		return firstDay;
-	}
+	};
 
 	//判断某个数字是否在给定的数组中
 	//Verify a number whether it is in an array
@@ -76,10 +76,11 @@
 		}
 
 		return false;
-	}
+	};
 
-	function Calendar(opts){
+	function Calendar(options){
 		var that = this,
+			opts = options || {},
 			thisDate = new Date();
 
 		//样式相关参数	
