@@ -118,10 +118,18 @@
 
 		//数据相关参数
 		//arguments related to info of each date block
+		this.data = opts.data || {prev: {}, current: {}, next: {}};
 		this.notAvailable = opts.notAvailable || {prev: [], current: [], next: []};
 
 		var parent = document.querySelector(this.el);
 		var tools = {};
+
+		var getDaysOfMonth = this.getDaysOfMonth.bind(this),
+			preRenderCallback = this.preRenderCallback.bind(this),
+			postRenderCallback = this.postRenderCallback.bind(this),
+			hoverCallback = this.hoverCallback.bind(this),
+			outCallback = this.outCallback.bind(this),
+			clickCallback = this.clickCallback.bind(this);
 
 		//设置语言
 		//language setting
@@ -155,7 +163,7 @@
 							'</div>';
 			
 			return toolsDOM;
-		}
+		};
 
 		//计算日历第一列的星期数的值和当前月第一天星期数的值的差
 		//calculate differential of day of week between the first column and the day of the first day of current month
@@ -169,7 +177,7 @@
 			else if(weekStart < firstDay){
 				return firstDay - weekStart;
 			}
-		}
+		};
 
 		//拼接日历内容DOM字符串
 		//joint DOM string of calendar content
@@ -193,10 +201,11 @@
 			else{
 				lastMonth = month - 1;
 			}
+
 			//获取上月天数，确定当前月份面板中第一天
 			//get the number of days of last month, and calculate the very first day of calendar
-			var	daysOfLastMonth = that.getDaysOfMonth(lastYear, lastMonth),
-				daysOfThisMonth = that.getDaysOfMonth(year, month),
+			var	daysOfLastMonth = getDaysOfMonth(lastYear, lastMonth),
+				daysOfThisMonth = getDaysOfMonth(year, month),
 				thisPanelFirstDay = daysOfLastMonth - this._countGapDays(weekStart, firstDay) + 1;
 
 			var dateContentDOM = '',
@@ -366,7 +375,7 @@
 						'<div class="calendar-header">'+calendarHeader+'</div>'+
 						'<div class="calendar-body">'+calendarBody+'</div>'+
 					'</div>';
-		}
+		};
 
 		//设置or更新tools内容
 		//set or update content of tools
@@ -391,7 +400,74 @@
 				tools.year = yearDOM.getAttribute('data-value');
 				tools.month = monthDOM.getAttribute('data-value');
 			}
-		}
+		};
+
+		//渲染数据
+		this._renderData = function(){
+			var data = this.data;
+			var lt = parent.querySelectorAll('[data-value="leftTop"]'),
+				lb = parent.querySelectorAll('[data-value="leftBottom"]'),
+				rt = parent.querySelectorAll('[data-value="rightTop"]'),
+				rb = parent.querySelectorAll('[data-value="rightBottom"]'),
+				ltData = data.prev.leftTop,
+				lbData = data.prev.leftBottom,
+				rtData = data.prev.rightTop,
+				rbData = data.prev.rightBottom;
+
+			function findData(item, position){
+				var parents = item.parentNode.parentNode,
+					className = parents.classList.toString(),
+					pos = Number(parents.querySelector('[data-type="date"]').innerHTML);
+
+				var $value;
+				if(className.indexOf('calendar-last-month') > -1){
+					$value = data.prev[position][pos];
+				}
+				else if(className.indexOf('calendar-next-month') > -1){
+					$value = data.next[position][pos];
+				}
+				else{
+					$value = data.current[position][pos];
+				}
+
+				var $thisAllItems = item.parentNode.querySelectorAll('[data-value="'+position+'"]');
+
+				;[].forEach.call($thisAllItems, function(cur, i, arr){
+					if($value){
+						if($value instanceof Array){
+							cur.innerText = $value[i] == undefined ? '' : $value[i];
+						}						
+						else{
+							cur.innerText = $value;
+						}
+					}					
+				});
+			}
+
+			if(lt.length && ltData){
+				;[].forEach.call(lt, function(cur, index, array){
+					findData(cur, 'leftTop');
+				});
+			}
+
+			if(lb.length && lbData){
+				;[].forEach.call(lb, function(cur, index, array){
+					findData(cur, 'leftBottom');
+				});
+			}
+
+			if(rt.length && rtData){
+				;[].forEach.call(rt, function(cur, index, array){
+					findData(cur, 'rightTop');
+				});
+			}
+
+			if(rb.length && rbData){
+				;[].forEach.call(rb, function(cur, index, array){
+					findData(cur, 'rightBottom');
+				});
+			}
+		};
 
 		//更新日历
 		//update calendar
@@ -402,7 +478,7 @@
 			parent.querySelector('.calendar-content').outerHTML = calendarDOM;
 
 			this._bindEvents().itemEventsBind();
-		}
+		};
 
 		//渲染插件
 		//render calendar
@@ -410,6 +486,8 @@
 			var y = year || this.year,
 				m = month || this.month,
 				calendarDOM = this._getCalendarDOM(y, m, this.getDaysOfMonth(y, m), this.getFirstDay(y, m));
+
+			preRenderCallback();
 
 			if(!parent.childNodes.length){			//初始化/init
 				var toolsDOM = this._getToolsDOM();
@@ -419,7 +497,12 @@
 			else{			//更新/update
 				this._updateCalender(y, m);
 			}	
-		}
+
+			this._renderData();
+			postRenderCallback();
+		};
+
+		var _render = this._render.bind(this);
 
 		//绑定事件
 		//events binding
@@ -431,7 +514,7 @@
 				onceEventsBind: function(){
 					;[].forEach.call(parent.querySelectorAll('[data-type="calendar-btn"]'), function(cur, index, array){
 						cur.addEventListener('click', function(){
-							that.preRenderCallback();
+							preRenderCallback();
 
 							var _this = this,
 								curYear = tools.year,
@@ -460,8 +543,8 @@
 							that.year = curYear;
 							that.month = curMonth;
 
-							that._render(curYear, curMonth);
-							that.postRenderCallback();
+							_render(curYear, curMonth);
+							postRenderCallback();
 						}, false);
 						
 					});
@@ -469,16 +552,16 @@
 				itemEventsBind: function(){
 					function bindHover(item){
 						item.addEventListener('mouseenter', function(){
-							that.hoverCallback.call(item);
+							hoverCallback.call(item);
 						});
 						item.addEventListener('mouseleave', function(){
-							that.outCallback.call(item);
+							outCallback.call(item);
 						});
 					}
 
 					function bindClick(item){
 						item.addEventListener('click', function(){
-							that.clickCallback.call(item);
+							clickCallback.call(item);
 						});
 					}
 
@@ -505,7 +588,7 @@
 					});
 				}
 			}
-		}
+		};
 
 		//触发事件
 		//events trigger
@@ -519,7 +602,7 @@
 				evt.initEvent(event, true, true);
 				return !element.dispatchEvent(evt);
 			}
-		}
+		};
 	}
 
 	Calendar.prototype = new DateUtil();
@@ -531,7 +614,7 @@
 		var bindingEvents = this._bindEvents();
 		bindingEvents.onceEventsBind();
 		bindingEvents.itemEventsBind();
-	}
+	};
 
 	Calendar.prototype.updateContent = function(options){
 		var opts = options || {};
@@ -554,22 +637,22 @@
 			_this_na = {prev: [], current: [], next: []};
 		}
 		return this;
-	}
+	};
 
 	Calendar.prototype.render = function(y, m){
 		this._render(y, m);
 		return this;
-	}
+	};
 
 	Calendar.prototype.prev = function(y, m){
 		this._trigger(document.querySelector('#calendarPrev'), 'click');
 		return this;
-	}
+	};
 
 	Calendar.prototype.next = function(y, m){
 		this._trigger(document.querySelector('#calendarNext'), 'click');
 		return this;
-	}
+	};
 
 	window.Calendar = Calendar;
 })(window);
